@@ -2,6 +2,7 @@ package com.gas.processor;
 
 import com.gas.annotation.BindView;
 import com.google.auto.service.AutoService;
+import com.squareup.javapoet.JavaFile;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -70,18 +71,15 @@ public class BindViewProcessor extends AbstractProcessor {
             int id = bindAnnotation.value();
             proxy.putElement(id, variableElement);
         }
-        //通过遍历mProxyMap，创建java文件
+        //通过javapoet生成
         for (String key : mProxyMap.keySet()) {
             ClassCreatorProxy proxyInfo = mProxyMap.get(key);
+            JavaFile javaFile = JavaFile.builder(proxyInfo.getPackageName(), proxyInfo.generateJavaCode()).build();
             try {
-                mMessager.printMessage(Diagnostic.Kind.NOTE, " --> create " + proxyInfo.getProxyClassFullName());
-                JavaFileObject jfo = processingEnv.getFiler().createSourceFile(proxyInfo.getProxyClassFullName(), proxyInfo.getTypeElement());
-                Writer writer = jfo.openWriter();
-                writer.write(proxyInfo.generateJavaCode());
-                writer.flush();
-                writer.close();
+                //　生成文件
+                javaFile.writeTo(processingEnv.getFiler());
             } catch (IOException e) {
-                mMessager.printMessage(Diagnostic.Kind.NOTE, " --> create " + proxyInfo.getProxyClassFullName() + "error");
+                e.printStackTrace();
             }
         }
         mMessager.printMessage(Diagnostic.Kind.NOTE, "process finish ...");

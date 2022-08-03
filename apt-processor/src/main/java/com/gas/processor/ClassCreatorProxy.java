@@ -1,8 +1,13 @@
 package com.gas.processor;
 
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeSpec;
+
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -27,37 +32,31 @@ public class ClassCreatorProxy {
         mVariableElementMap.put(id, element);
     }
 
-    public String generateJavaCode() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("package ").append(mPackageName).append(";\n\n");
-        builder.append("import com.gas.library.*;\n");
-        builder.append('\n');
-        builder.append("public class ").append(mBindingClassName);
-        builder.append(" {\n");
+    public TypeSpec generateJavaCode() {
+        return TypeSpec.classBuilder(mBindingClassName)
+                .addModifiers(Modifier.PUBLIC)
+                .addMethod(generateMethods())
+                .build();
 
-        generateMethods(builder);
-        builder.append('\n');
-        builder.append("}\n");
-        return builder.toString();
     }
 
-    private void generateMethods(StringBuilder builder) {
-        builder.append("public void bind(" + mTypeElement.getQualifiedName() + " host ) {\n");
+    private MethodSpec generateMethods() {
+        ClassName host = ClassName.bestGuess(mTypeElement.getQualifiedName().toString());
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("bind")
+                .addModifiers(Modifier.PUBLIC)
+                .returns(void.class)
+                .addParameter(host, "host");
+
         for (int id : mVariableElementMap.keySet()) {
             VariableElement element = mVariableElementMap.get(id);
             String name = element.getSimpleName().toString();
             String type = element.asType().toString();
-            builder.append("host." + name).append(" = ");
-            builder.append("(" + type + ")(((android.app.Activity)host).findViewById( " + id + "));\n");
+            methodBuilder.addCode("host." + name + " = " + "(" + type + ")(((android.app.Activity)host).findViewById( " + id + "));");
         }
-        builder.append("  }\n");
+        return methodBuilder.build();
     }
 
-    public String getProxyClassFullName() {
-        return mPackageName + "." + mBindingClassName;
-    }
-
-    public TypeElement getTypeElement() {
-        return mTypeElement;
+    public String getPackageName() {
+        return mPackageName;
     }
 }
