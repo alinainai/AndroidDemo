@@ -1,0 +1,64 @@
+// 参考 https://github.com/ben-manes/gradle-versions-plugin
+plugins {
+    id 'java-library'
+    id 'java-gradle-plugin'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'com.gradle.plugin-publish' version '0.21.0'
+    id 'maven-publish'
+    id 'groovy'
+    //dokka 生成 Java 文档的库
+}
+
+dependencies {
+    implementation localGroovy() // Groovy DSL
+    implementation gradleApi()  // Gradle DSL
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    group = 'Publications'
+    description = 'Create jar of sources.'
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+gradlePlugin {
+    plugins {
+        simplePlugin {
+            id = 'com.gas.gradleplugin'
+            implementationClass = 'com.gas.gradleplugin.CustomPlugin'
+        }
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.gas.gradleplugin'
+            artifactId = 'custom'
+            version = '1.1'
+            from components.java
+            // 上传source，可以看到方法的注释
+            artifact sourcesJar
+        }
+    }
+    repositories {
+        maven {
+            url = "$rootDir/maven-repo"
+        }
+    }
+}
+
+// 这里是发布到 gradle 门户的配置
+// https://docs.gradle.org/current/userguide/publishing_gradle_plugins.html
+//pluginBundle {
+//    website = POM_URL
+//    vcsUrl = POM_SCM_URL
+//    tags = ['dependencies', 'versions', 'updates']
+//}
+
+

@@ -3,10 +3,16 @@ pluginManagement {
         gradlePluginPortal()
         google()
         mavenCentral()
+        maven {
+            url = uri("$rootDir/maven-repo")
+        }
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+//    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+//    PREFER_PROJECT(true)--首选项目存储库
+//    PREFER_SETTINGS(false)--首选设置存储库
+//    FAIL_ON_PROJECT_REPOS(false)--强制设置存储库
     repositories {
         google()
         mavenCentral()
@@ -14,3 +20,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "AndroidDemo"
 include ':app'
+include ':gradleplugin'
