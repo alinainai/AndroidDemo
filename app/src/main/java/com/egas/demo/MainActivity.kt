@@ -19,5 +19,8 @@ class MainActivity : BaseActivity() {
         findViewById<View>(R.id.btn3).setOnClickListener {
 
         }
+        findViewById<View>(R.id.btn4).setOnClickListener {
+            startActivity(Intent(this,StateListAnimActivity::class.java))
+        }
     }
 }
