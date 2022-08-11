@@ -1,17 +1,16 @@
 // 参考 https://github.com/ben-manes/gradle-versions-plugin
 plugins {
-    id 'java-library'
-    id 'java-gradle-plugin'
+    id 'java'
     id 'org.jetbrains.kotlin.jvm'
-    id 'com.gradle.plugin-publish' version '0.21.0'
+    id 'java-gradle-plugin'
     id 'maven-publish'
-    id 'groovy'
-    //dokka 生成 Java 文档的库
 }
 
 dependencies {
-    implementation localGroovy() // Groovy DSL
-    implementation gradleApi()  // Gradle DSL
+    implementation "com.android.tools.build:gradle:7.1.0"
+    implementation 'com.android.tools:common:30.2.1'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.21'
+    implementation 'org.javassist:javassist:3.22.0-GA'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -30,7 +29,7 @@ gradlePlugin {
     plugins {
         simplePlugin {
             id = 'com.gas.gradleplugin'
-            implementationClass = 'com.gas.gradleplugin.CustomPlugin'
+            implementationClass = 'com.gas.gradleplugin.LogPlugin'
         }
     }
 }
