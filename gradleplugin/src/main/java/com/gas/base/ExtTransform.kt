@@ -27,7 +27,6 @@ abstract class ExtTransform(private val debug: Boolean) : Transform() {
         log("Transform start, isIncremental = ${transformInvocation.isIncremental}.")
 
         val inputProvider = transformInvocation.inputs
-        val referenceProvider = transformInvocation.referencedInputs
         val outputProvider = transformInvocation.outputProvider
 
         // 1. Transform logic implemented by subclasses.
