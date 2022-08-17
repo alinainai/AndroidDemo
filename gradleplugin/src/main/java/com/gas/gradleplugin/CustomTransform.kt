@@ -107,22 +107,25 @@ class CustomTransform(project: Project): Transform() {
      */
     private fun transformJar(inputJar: File, outputJar: File) {
         Files.createParentDirs(outputJar)
-        FileInputStream(inputJar).use { fis ->
-            ZipInputStream(fis).use { zis ->
-                FileOutputStream(outputJar).use { fos ->
-                    ZipOutputStream(fos).use { zos ->
-                        var entry = zis.nextEntry
-                        while (entry != null) {
-                            if (!entry.isDirectory ) {
-                                zos.putNextEntry(ZipEntry(entry.name))
-                                zis.copyTo(zos)
-                            }
-                            entry = zis.nextEntry
-                        }
-                    }
-                }
-            }
-        }
+        // 如果不需要处理 Jar 包下的文件使用下面代码
+        FileUtils.copyFile(inputJar, outputJar)
+        // 如果需要处理 Jar 包下的文件使用下面代码
+//        FileInputStream(inputJar).use { fis ->
+//            ZipInputStream(fis).use { zis ->
+//                FileOutputStream(outputJar).use { fos ->
+//                    ZipOutputStream(fos).use { zos ->
+//                        var entry = zis.nextEntry
+//                        while (entry != null) {
+//                            if (!entry.isDirectory ) {
+//                                zos.putNextEntry(ZipEntry(entry.name))
+//                                zis.copyTo(zos)
+//                            }
+//                            entry = zis.nextEntry
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 
     /**
@@ -134,6 +137,7 @@ class CustomTransform(project: Project): Transform() {
         FileInputStream(inputFile).use { fis ->
             FileOutputStream(outputFile).use { fos ->
                 // Apply transform function.
+
                 fis.copyTo(fos)
             }
         }

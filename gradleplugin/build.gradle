@@ -10,7 +10,8 @@ dependencies {
     implementation "com.android.tools.build:gradle:7.1.0"
     implementation 'com.android.tools:common:30.2.1'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.21'
-    implementation 'org.javassist:javassist:3.22.0-GA'
+    implementation 'org.ow2.asm:asm:9.2'
+    implementation 'org.ow2.asm:asm-commons:9.1'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
