@@ -1,25 +1,34 @@
-package com.gas.base
+package com.gas.gradleplugin
 
-import com.android.SdkConstants
-import com.android.build.api.transform.Format
-import com.android.build.api.transform.Status
-import com.android.build.api.transform.Transform
-import com.android.build.api.transform.TransformInvocation
-import com.android.builder.utils.isValidZipEntryName
+import com.android.build.api.transform.*
+import com.android.build.api.variant.VariantInfo
+import com.android.build.gradle.internal.pipeline.TransformManager
 import com.android.utils.FileUtils
 import com.google.common.io.Files
+import org.gradle.api.Incubating
+import org.gradle.api.Project
 import java.io.*
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-abstract class ExtTransform(private val debug: Boolean) : Transform() {
+class CustomTransform(project: Project): Transform() {
 
-    abstract fun provideFunction(): ((InputStream, OutputStream) -> Unit)?
-
-    open fun classFilter(className: String) = className.endsWith(SdkConstants.DOT_CLASS)
+    override fun getName()  = "CustomTransform"
 
     override fun isIncremental() = true
+
+    /**
+     * 用于过滤 Variant，返回 false 表示该 Variant 不执行 Transform
+     */
+    @Incubating
+    override fun applyToVariant(variant: VariantInfo?): Boolean {
+        return "debug" == variant?.buildTypeName
+    }
+
+    override fun getInputTypes(): MutableSet<QualifiedContent.ContentType> = TransformManager.CONTENT_CLASS
+
+    override fun getScopes(): MutableSet<QualifiedContent.ScopeType> = TransformManager.SCOPE_FULL_PROJECT
 
     override fun transform(transformInvocation: TransformInvocation) {
         super.transform(transformInvocation)
@@ -29,30 +38,24 @@ abstract class ExtTransform(private val debug: Boolean) : Transform() {
         val inputProvider = transformInvocation.inputs
         val outputProvider = transformInvocation.outputProvider
 
-        // 1. Transform logic implemented by subclasses.
-        val function = provideFunction()
-
-        // 2. Delete all transform tmp files when not in incremental build.
+        // Delete all transform tmp files when not in incremental build.
         if (!transformInvocation.isIncremental) {
             log("All File deleted.")
             outputProvider.deleteAll()
         }
-
         for (input in inputProvider) {
-            // 3. Transform jar input.
             log("Transform jarInputs start.")
             for (jarInput in input.jarInputs) {
                 val inputJar = jarInput.file
                 val outputJar = outputProvider.getContentLocation(jarInput.name, jarInput.contentTypes, jarInput.scopes, Format.JAR)
                 if (transformInvocation.isIncremental) {
-                    // 3.1 Transform jar input in incremental build.
+                    log("Incremental:Transform jarInputs inputJar.name=${inputJar.name}")
                     when (jarInput.status ?: Status.NOTCHANGED) {
                         Status.NOTCHANGED -> {
                             // Do nothing.
                         }
                         Status.ADDED, Status.CHANGED -> {
-                            // Do transform.
-                            transformJar(inputJar, outputJar, function)
+                                transformJar(inputJar, outputJar)
                         }
                         Status.REMOVED -> {
                             // Delete.
@@ -60,26 +63,26 @@ abstract class ExtTransform(private val debug: Boolean) : Transform() {
                         }
                     }
                 } else {
-                    // 3.2 Transform jar input in full build.
-                    transformJar(inputJar, outputJar, function)
+                    log("NoIncremental:Transform jarInputs inputJar.name=${inputJar.name}")
+                    transformJar(inputJar, outputJar)
                 }
             }
-            // 4. Transform dir input.
-            log("Transform dirInput start.")
+            // 4. Transform directory input.
+            log("Transform directory start.")
             for (dirInput in input.directoryInputs) {
                 val inputDir = dirInput.file
                 val outputDir = outputProvider.getContentLocation(dirInput.name, dirInput.contentTypes, dirInput.scopes, Format.DIRECTORY)
                 if (transformInvocation.isIncremental) {
-                    // 4.1 Transform dir input in incremental build.
                     for ((inputFile, status) in dirInput.changedFiles) {
                         val outputFile = concatOutputFilePath(outputDir, inputFile)
+                        log("Incremental:Transform directory inputJar.name=${inputFile.name}")
                         when (status ?: Status.NOTCHANGED) {
                             Status.NOTCHANGED -> {
                                 // Do nothing.
                             }
                             Status.ADDED, Status.CHANGED -> {
                                 // Do transform.
-                                doTransformFile(inputFile, outputFile, function)
+                                transformDirectory(inputFile, outputFile)
                             }
                             Status.REMOVED -> {
                                 // Delete
@@ -88,13 +91,10 @@ abstract class ExtTransform(private val debug: Boolean) : Transform() {
                         }
                     }
                 } else {
-                    // 4.2 Transform dir input in full build.
                     for (inputFile in FileUtils.getAllFiles(inputDir)) {
-                        // Traversal fileTree (depthFirstPreOrder).
-                        if (classFilter(inputFile.name)) {
-                            val outputFile = concatOutputFilePath(outputDir, inputFile)
-                            doTransformFile(inputFile, outputFile, function)
-                        }
+                        val outputFile = concatOutputFilePath(outputDir, inputFile)
+                        log("NoIncremental:Transform directory inputJar.name=${inputFile.name}")
+                        transformDirectory(inputFile, outputFile)
                     }
                 }
             }
@@ -103,23 +103,19 @@ abstract class ExtTransform(private val debug: Boolean) : Transform() {
     }
 
     /**
-     * Do transform Jar.
+     * Do Transform Jar.
      */
-    private fun transformJar(inputJar: File, outputJar: File, function: ((InputStream, OutputStream) -> Unit)?) {
-        // Create parent directories to hold outputJar file.
+    private fun transformJar(inputJar: File, outputJar: File) {
         Files.createParentDirs(outputJar)
-        // Unzip.
         FileInputStream(inputJar).use { fis ->
             ZipInputStream(fis).use { zis ->
-                // Zip.
                 FileOutputStream(outputJar).use { fos ->
                     ZipOutputStream(fos).use { zos ->
                         var entry = zis.nextEntry
-                        while (entry != null && isValidZipEntryName(entry)) {
-                            if (!entry.isDirectory && classFilter(entry.name)) {
+                        while (entry != null) {
+                            if (!entry.isDirectory ) {
                                 zos.putNextEntry(ZipEntry(entry.name))
-                                // Apply transform function.
-                                applyFunction(zis, zos, function)
+                                zis.copyTo(zos)
                             }
                             entry = zis.nextEntry
                         }
@@ -130,37 +126,22 @@ abstract class ExtTransform(private val debug: Boolean) : Transform() {
     }
 
     /**
-     * Do transform file.
+     * Do Transform Directory.
      */
-    private fun doTransformFile(inputFile: File, outputFile: File, function: ((InputStream, OutputStream) -> Unit)?) {
+    private fun transformDirectory(inputFile: File, outputFile: File) {
         // Create parent directories to hold outputFile file.
         Files.createParentDirs(outputFile)
         FileInputStream(inputFile).use { fis ->
             FileOutputStream(outputFile).use { fos ->
                 // Apply transform function.
-                applyFunction(fis, fos, function)
+                fis.copyTo(fos)
             }
         }
     }
 
     private fun concatOutputFilePath(outputDir: File, inputFile: File) = File(outputDir, inputFile.name)
 
-    private fun applyFunction(input: InputStream, output: OutputStream, function: ((InputStream, OutputStream) -> Unit)?) {
-        try {
-            if (null != function) {
-                function.invoke(input, output)
-            } else {
-                // Copy
-                input.copyTo(output)
-            }
-        } catch (e: UncheckedIOException) {
-            throw e.cause!!
-        }
-    }
-
     private fun log(logStr: String) {
-        if (debug) {
-            println("$name - $logStr")
-        }
+        println("$name - $logStr")
     }
 }

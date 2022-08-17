@@ -29,7 +29,7 @@ gradlePlugin {
     plugins {
         simplePlugin {
             id = 'com.gas.gradleplugin'
-            implementationClass = 'com.gas.gradleplugin.LogPlugin'
+            implementationClass = 'com.gas.gradleplugin.CustomPlugin'
         }
     }
 }
