@@ -4,7 +4,7 @@ import com.gas.gradleplugin.log
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.Opcodes
 
-class CustomAnnotationVisitor(av: AnnotationVisitor?) : AnnotationVisitor(Opcodes.ASM6, av) {
+class CustomFieldVisitor(av: AnnotationVisitor?) : AnnotationVisitor(Opcodes.ASM6, av) {
     override fun visit(name: String, value: Any) {
         super.visit(name, value)
         log(
