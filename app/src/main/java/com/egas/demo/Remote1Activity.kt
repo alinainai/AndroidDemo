@@ -6,12 +6,12 @@ import android.os.Bundle
 import android.view.View
 import com.egas.demo.base.BaseActivity
 
-class MainActivity : BaseActivity() {
+class Remote1Activity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         findViewById<View>(R.id.hello).setOnClickListener {
-            startActivity(Intent(this,Remote1Activity::class.java))
+            startActivity(Intent(this,Remote2Activity::class.java))
         }
     }
 }

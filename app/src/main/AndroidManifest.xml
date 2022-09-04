@@ -12,6 +12,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AndroidDemo"
+        android:name=".base.BaseApp"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
@@ -22,6 +23,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".Remote1Activity"
+            android:exported="false"
+            android:process=":remote" />
+
+        <activity android:name=".Remote2Activity"
+            android:exported="false"
+            android:process="com.egas.demo.remote" />
+
+
     </application>
 
 </manifest>
