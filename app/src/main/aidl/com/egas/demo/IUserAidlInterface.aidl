@@ -2,7 +2,7 @@ package com.egas.demo;
 
 import com.egas.demo.bean.User; //引入data类
 
-interface IUserServerInterface {
+interface IUserAidlInterface {
      List<User> getUsers();
-     void addUser(User user);
+     boolean addUser(in User user);
 }

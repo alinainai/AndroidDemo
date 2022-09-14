@@ -1,3 +1,3 @@
-package com.egas.demo;
+package com.egas.demo.bean;
 
 parcelable User;

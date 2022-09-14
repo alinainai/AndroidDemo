@@ -23,12 +23,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-<!--        <service android:name=".UserAidlService"-->
-<!--            android:process=":user_aidl"-->
-<!--            android:exported="true"-->
-<!--            >-->
-<!--            <intent-filter -->
-<!--        </service>-->
+        <service
+            android:name=".UserAidlService"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="com.egas.aidl.permission.USER_AIDL"
+            android:process=":remote">
+            <intent-filter>
+                <action android:name="com.egas.aidl.Server.Start" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
