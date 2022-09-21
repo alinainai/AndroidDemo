@@ -1,2 +1,5 @@
 # AndroidDemo
-关于android知识点的小项目
+
+本分支内容是关于 gradle 生命周期
+
+主要代码在 setting.gradle 文件中
