@@ -41,3 +41,146 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }
+// 创建一个 extension
+class Tag {
+    String name
+    Tag() {}
+    Tag(String name) {
+        this.name = name
+    }
+    String toString() {
+        return "This Tag is $name"
+    }
+}
+class IDCard extends Tag {
+    int des = 5
+    IDCard() {
+    }
+    IDCard(int des) {
+        this.des = des
+    }
+    String toString() {
+        return super.toString() + " Its des is $des."
+    }
+}
+//create
+project.extensions.create('tag1', Tag)
+Tag a1 = project.extensions.create(Tag, 'tag2', IDCard, 10) // create 创建的 Extension 会返回创建的 instance
+project.extensions.create(TypeOf.typeOf(Tag), 'tag3', IDCard, 15)
+//add
+project.extensions.add('tag4',IDCard)
+project.extensions.add(Tag,'tag5',new IDCard(10))
+project.extensions.add(TypeOf.typeOf(Tag),'tag6',new IDCard(15))
+
+tag1 {
+    name 'tag1'
+}
+tag2 {
+    name 'tag2'
+}
+tag3 {
+    name 'tag3'
+}
+tag4 {
+    name 'tag4'
+}
+tag5 {
+    name = 'tag5' // 注意这里的等号
+}
+tag6 {
+    name = 'tag6' // 注意这里的等号
+}
+
+project.task('printExtension') {
+    doLast {
+        println project.tag1
+        println project.tag2
+        println project.tag3
+        println project.tag4
+        println project.tag5
+        println project.tag6
+    }
+}
+
+project.task('findExtension') {
+    doLast {
+        println project.extensions.getByName("tag1")
+        println project.extensions.findByName("tag1")
+        println project.extensions.findByType(TypeOf.typeOf(IDCard)) // 注意这里，返回是第一个 IDCard 类型的 Extension
+        println project.extensions.getByType(TypeOf.typeOf(IDCard)) // 同上
+    }
+}
+
+
+//嵌套的 extension
+class Outer {
+
+    String msg
+    Inner inner = new Inner()
+
+    //创建内部Extension，名称为方法名 inner
+    void inner(Action<Inner> action) {
+        action.execute(inner)
+    }
+
+    String toString() {
+        return "OuterExt[ msg = ${msg}] " + inner
+    }
+
+}
+
+
+class Inner {
+    String msg
+    String toString() {
+        return "InnerExt[ msg = ${msg}]"
+    }
+}
+
+def outExt = project.extensions.create("outer", Outer)
+
+outer {
+    msg "this is a outer message."
+    inner {
+        msg = "This is a inner message."
+    }
+}
+
+
+project.task('nestedExtension') {
+    doLast {
+        println outExt
+    }
+}
+
+class FlavorConfig{
+    String name //注意：必须要有 name 属性进行标识
+    boolean isDebug
+    FlavorConfig(String name) {
+        this.name = name
+    }
+    //配置与属性同名的方法
+    void isDebug(boolean isDebug) {
+        this.isDebug = isDebug
+    }
+}
+
+NamedDomainObjectContainer<FlavorConfig> container = project.container(FlavorConfig)
+project.extensions.add('flavorConfig',container)
+
+flavorConfig {
+    google {
+        isDebug false
+    }
+    wechat {
+        isDebug true
+    }
+}
+//创建 task
+project.tasks.create("namedDomainTask"){
+    doLast {
+        project.flavorConfig.each{
+            println "$it.name: $it.isDebug "
+        }
+    }
+}

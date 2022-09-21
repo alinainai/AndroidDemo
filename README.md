@@ -1,2 +1,5 @@
 # AndroidDemo
-关于android知识点的小项目
+
+本分支内容是关于 gradle extension 的自定义
+
+主要代码在 app 的 build.gradle 中
