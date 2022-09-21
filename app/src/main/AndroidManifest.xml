@@ -3,7 +3,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.egas.demo">
 
+    <!-- 声明 permission  -->
+    <permission
+        android:name="com.egas.aidl.permission.USER_AIDL"
+        android:protectionLevel="normal" />
+
+    <!-- 客户端使用 permission  -->
+    <uses-permission android:name="com.egas.aidl.permission.USER_AIDL" />
+
     <application
+        android:name=".base.App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -12,7 +21,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AndroidDemo"
-        android:name=".base.App"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
