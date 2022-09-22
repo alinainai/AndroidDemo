@@ -17,9 +17,20 @@ android {
     }
 
     buildTypes {
+        debug{
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    productFlavors{
+        flavorDimensions 'isFree'
+        google{
+            dimension 'isFree'
+        }
+        winxin{
+            dimension 'isFree'
         }
     }
     compileOptions {
@@ -41,7 +52,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }
-// 创建一个 extension
+// 1、-----------------创建一个 extension -----------------
 class Tag {
     String name
     Tag() {}
@@ -101,7 +112,7 @@ project.task('printExtension') {
         println project.tag6
     }
 }
-
+// 2、-----------------查找 extension -----------------
 project.task('findExtension') {
     doLast {
         println project.extensions.getByName("tag1")
@@ -112,7 +123,7 @@ project.task('findExtension') {
 }
 
 
-//嵌套的 extension
+// 3、-----------------嵌套的 extension -----------------
 class Outer {
 
     String msg
@@ -152,7 +163,7 @@ project.task('nestedExtension') {
         println outExt
     }
 }
-
+// 4、---------------- NamedDomainObjectContainer -----------------
 class FlavorConfig{
     String name //注意：必须要有 name 属性进行标识
     boolean isDebug
@@ -176,11 +187,18 @@ flavorConfig {
         isDebug true
     }
 }
-//创建 task
+
 project.tasks.create("namedDomainTask"){
     doLast {
         project.flavorConfig.each{
             println "$it.name: $it.isDebug "
         }
+    }
+}
+// 5、---------------- application 变体 -----------------
+//当前在 app 的 build.gradle 文件中
+afterEvaluate {
+    project.android.applicationVariants.all{ variant ->
+        println "$variant.name $variant.baseName"
     }
 }
