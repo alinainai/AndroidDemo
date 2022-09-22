@@ -4,7 +4,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.DeadObjectException
 import android.os.IBinder
@@ -13,18 +12,15 @@ import android.util.Log
 import android.view.View
 import com.egas.demo.base.BaseActivity
 import com.egas.demo.bean.User
-import kotlin.random.Random
 
 class MainActivity : BaseActivity() {
-    companion object{
-        const val TAG  = "MainActivity"
+    companion object {
+        const val TAG = "MainActivity"
     }
 
     private var mRemoteServer: IUserAidlInterface? = null
     private var mService: IBinder? = null
-    private var mHasBind:Boolean = false
-    private var num = 3
-
+    private var mHasBind: Boolean = false
 
     private val mDeathRecipient = object : IBinder.DeathRecipient {
         override fun binderDied() {
@@ -44,6 +40,7 @@ class MainActivity : BaseActivity() {
             //在 onServiceConnected 调用 IPersonManager.Stub.asInterface 获取接口类型的实例，通过这个实例调用服务端的服务
             mRemoteServer = IUserAidlInterface.Stub.asInterface(service)
         }
+
         override fun onServiceDisconnected(name: ComponentName?) {
             Log.e(TAG, "onServiceDisconnected, thread = ${Thread.currentThread().name}") //主线程
         }
@@ -55,14 +52,8 @@ class MainActivity : BaseActivity() {
         findViewById<View>(R.id.button1).setOnClickListener {//开启服务
             connectService()
         }
-        findViewById<View>(R.id.button2).setOnClickListener {//关闭服务
-
-        }
         findViewById<View>(R.id.button3).setOnClickListener {//添加 user
             addPerson()
-        }
-        findViewById<View>(R.id.button4).setOnClickListener {//获取Users
-            getPersons()
         }
     }
 
@@ -77,30 +68,18 @@ class MainActivity : BaseActivity() {
 
     private fun addPerson() {
         //客户端调服务端方法时,需要捕获以下几个异常:
-        //RemoteException 异常：
-        //DeadObjectException 异常：连接中断时会抛出异常；
-        //SecurityException 异常：客户端和服务端中定义的 AIDL 发生冲突时会抛出异常；
         try {
-            val x = Random(100).nextInt()
-            val addPersonResult = mRemoteServer?.addUser(User(num++,"小${x}","我是${x}"))
+            val addPersonResult = mRemoteServer?.addUser(User("张花花"))
             Log.e(TAG, "addPerson result = $addPersonResult")
         } catch (e: RemoteException) {
             e.printStackTrace()
-        } catch (e: DeadObjectException) {
+        } catch (e: DeadObjectException) { // 连接中断时会抛出异常；
             e.printStackTrace()
-        } catch (e: SecurityException) {
+        } catch (e: SecurityException) {  // 客户端和服务端中定义的 AIDL 发生冲突时会抛出异常；
             e.printStackTrace()
         } catch (e: IllegalStateException) {
             e.printStackTrace()
         }
-    }
-
-    private fun getPersons() {
-        val personList = mRemoteServer?.users
-        personList?.forEach { user ->
-            Log.e(TAG, "user ${user}")
-        }
-        //log(TAG, "person 列表 $personList")
     }
 
     override fun onDestroy() {
