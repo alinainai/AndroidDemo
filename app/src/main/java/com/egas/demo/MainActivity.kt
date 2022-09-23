@@ -15,29 +15,17 @@ import com.egas.demo.bean.User
 
 class MainActivity : BaseActivity() {
     companion object {
-        const val TAG = "MainActivity"
+        const val TAG = "客户端"
     }
 
     private var mRemoteServer: IUserAidlInterface? = null
     private var mService: IBinder? = null
     private var mHasBind: Boolean = false
 
-    private val mDeathRecipient = object : IBinder.DeathRecipient {
-        override fun binderDied() {
-            //子线程
-            Log.e(TAG, "binder died, thread = ${Thread.currentThread().name}")//监听 binder died
-            mService?.unlinkToDeath(this, 0) //移除死亡通知
-            mService = null
-            connectService() //重新连接
-        }
-    }
-
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             mService = service
             Log.e(TAG, "onServiceConnected, thread = ${Thread.currentThread().name}")
-            service?.linkToDeath(mDeathRecipient, 0) //给binder设置一个死亡代理
-            //在 onServiceConnected 调用 IPersonManager.Stub.asInterface 获取接口类型的实例，通过这个实例调用服务端的服务
             mRemoteServer = IUserAidlInterface.Stub.asInterface(service)
         }
 
@@ -83,11 +71,9 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-        //最后记得unbindService
-//        unregisterListener()
         if (mHasBind) {
             unbindService(serviceConnection)
         }
+        super.onDestroy()
     }
 }
