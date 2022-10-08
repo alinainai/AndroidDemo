@@ -1,11 +1,11 @@
 package com.egas.demo
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.egas.demo.base.BaseActivity
+import com.egas.demo.databinding.ActivityMainBinding
 
 class MainActivity : BaseActivity() {
-   private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
