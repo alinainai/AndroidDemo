@@ -30,6 +30,11 @@ class MainActivity : BaseActivity() {
             val back = jniBean.processStringArray(trans)
             Log.e("string数组", "{trans= ${trans}} {back= ${back}}")
         }
+        binding.button3.setOnClickListener {
+            Log.e("修改前", "{static field= ${JniDemoClass.staticField}} {file= ${jniBean.strField}}")
+            jniBean.modifyField()
+            Log.e("修改后", "{static field= ${JniDemoClass.staticField}} {file= ${jniBean.strField}}")
+        }
     }
 
 }

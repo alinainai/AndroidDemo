@@ -28,7 +28,9 @@ public class JniDemoClass {
 
     public native void processIntArray(int[] strs);
 
-    public native void processStringArray(String[] strs);
+    public native String[] processStringArray(String[] strs);
+
+    public native void modifyField();
 
 
 }
