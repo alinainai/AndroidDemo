@@ -10,15 +10,14 @@ public class JniDemoClass {
 
     private static final String TAG = "JniDemoClass";
 
-    public static int staticField = 1;
-    public int field = 2;
-    public String strField = "String";
+    public static String staticField = "0";
+    public String strField = "11";
 
     public void logHelloJava() {
         Log.e(TAG, "hello java");
     }
 
-    public static void staticLogHelloJava() {
+    public static void sLogHelloJava() {
         Log.e(TAG, "hello java static");
     }
 
@@ -32,5 +31,6 @@ public class JniDemoClass {
 
     public native void modifyField();
 
+    public native void invokeMethod();
 
 }
