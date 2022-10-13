@@ -28,12 +28,23 @@ class MainActivity : BaseActivity() {
         binding.button2.setOnClickListener {
             val trans = arrayOf("a", "b", "c")
             val back = jniBean.processStringArray(trans)
-            Log.e("string数组", "{trans= ${trans}} {back= ${back}}")
+            val str1 = StringBuilder(16)
+            trans.forEach {
+                str1.append(it).append(",")
+            }
+            val str2 = StringBuilder(16)
+            back.forEach {
+                str2.append(it).append(",")
+            }
+            Log.e("string数组", "{trans= ${str1}} {back= ${str2}}")
         }
         binding.button3.setOnClickListener {
             Log.e("修改前", "{static field= ${JniDemoClass.staticField}} {file= ${jniBean.strField}}")
             jniBean.modifyField()
             Log.e("修改后", "{static field= ${JniDemoClass.staticField}} {file= ${jniBean.strField}}")
+        }
+        binding.button4.setOnClickListener {
+            jniBean.invokeMethod()
         }
     }
 
