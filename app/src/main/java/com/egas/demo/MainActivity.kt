@@ -46,6 +46,12 @@ class MainActivity : BaseActivity() {
         binding.button4.setOnClickListener {
             jniBean.invokeMethod()
         }
+        binding.button5.setOnClickListener {
+            jniBean.cacheMethodId()
+        }
+        binding.button6.setOnClickListener {
+            jniBean.verifyInitCacheMethodId()
+        }
     }
 
 }
