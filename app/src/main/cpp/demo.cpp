@@ -114,4 +114,43 @@ JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_invokeMethod
         env->CallVoidMethod(thiz, mMethodId);
     }
 }
+JNIEXPORT void JNICALL
+Java_com_egas_demo_JniDemoClass_cacheMethodId(JNIEnv *env, jobject obj) {
+    static jfieldID fid_s = nullptr;  // 使用时缓存ID
+    jclass cls = env->GetObjectClass(obj);
+    jstring jstr;
+    const char *str;
+
+    if (fid_s == nullptr) {
+        LOGE("nullptr = nullptr");
+        fid_s = env->GetFieldID(cls, "strField", "Ljava/lang/String;");
+        if (fid_s == nullptr) {
+            return; /* exception already thrown */
+        }
+    }
+
+    jstr = static_cast<jstring>(env->GetObjectField(obj, fid_s));
+    str = env->GetStringUTFChars(jstr, JNI_FALSE);
+    if (str == nullptr) {
+        return; /* out of memory */
+    }
+
+    env->ReleaseStringUTFChars(jstr, str);
+    jstr = env->NewStringUTF("123");
+    if (jstr == nullptr) {
+        return; /* out of memory */
+    }
+    env->SetObjectField(obj, fid_s, jstr);
+}
+// 全局变量缓存ID
+jmethodID MID_InstanceMethodCall_callback;
+JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_initCacheMethodId
+        (JNIEnv *env, jclass clz) {
+    MID_InstanceMethodCall_callback = env->GetMethodID(clz, "logHelloJava", "()V");
+}
+// 使用缓存的 MethodID
+JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_verifyInitCacheMethodId
+        (JNIEnv *env, jobject thiz) {
+    env->CallVoidMethod(thiz, MID_InstanceMethodCall_callback);
+}
 }
