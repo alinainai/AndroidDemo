@@ -6,6 +6,7 @@ public class JniDemoClass {
 
     static {
         System.loadLibrary("demo");
+        initCacheMethodId();
     }
 
     private static final String TAG = "JniDemoClass";
@@ -32,5 +33,9 @@ public class JniDemoClass {
     public native void modifyField();
 
     public native void invokeMethod();
+    
+    public static native void initCacheMethodId();
+
+    public native void verifyInitCacheMethodId();
 
 }
