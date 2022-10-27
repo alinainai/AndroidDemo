@@ -34,6 +34,8 @@ public class JniDemoClass {
 
     public native void invokeMethod();
     
+    public native void cacheMethodId();
+    
     public static native void initCacheMethodId();
 
     public native void verifyInitCacheMethodId();
