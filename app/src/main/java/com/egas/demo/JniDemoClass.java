@@ -37,5 +37,11 @@ public class JniDemoClass {
     public static native void initCacheMethodId();
 
     public native void verifyInitCacheMethodId();
+    
+    public native void handlerDemo(String str);
+
+    public native void exceptingDemo();
+
+    public native int dynamicMethod(String str);
 
 }
