@@ -1,11 +1,58 @@
-#include <jni.h>
-#include <string>
-#include <cstdio>
-#include "androidlog.h"
-
-
 extern "C" {
+        
+// ---------------------------------------动态注册开始--------------------------------------
+// 需要注册的 Java 层类名
+#define JNIREG_CLASS "com/egas/demo/JniDemoClass"
 
+// 动态注册
+JNIEXPORT jint JNICALL dynamicMethod
+        (JNIEnv *env, jobject,jstring str ) {
+    const char *javaStr = env->GetStringUTFChars(str, JNI_FALSE);
+    LOGE("str=%s", javaStr);
+    env->ReleaseStringUTFChars(str, javaStr);
+    return 9;
+}
+
+// JNINativeMethod 结构体数组
+static JNINativeMethod methods[] = {
+        {"dynamicMethod", "(Ljava/lang/String;)I",(void*)dynamicMethod}, // JNINativeMethod 结构体
+};
+
+// 动态注册
+static int registerNatives(JNIEnv* env)
+{
+    // 根据类名获取 jclass 对象
+    jclass clazz = env->FindClass(JNIREG_CLASS);
+    if (clazz == nullptr) {
+        return JNI_FALSE;
+    }
+    // 调用 RegisterNatives()
+    if (env->RegisterNatives(clazz, methods, sizeof(methods) / sizeof(methods[0])) < 0) {
+        return JNI_FALSE;
+    }
+    return JNI_TRUE;
+}
+
+// 加载 so 库的回调
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
+{
+    JNIEnv* env = nullptr;
+    jint result = -1;
+    if (vm->GetEnv((void**) &env, JNI_VERSION_1_6) != JNI_OK) {
+        return -1;
+    }
+    assert(env != nullptr);
+    // 执行动态注册
+    if (!registerNatives(env)) {
+        return -1;
+    }
+    result = JNI_VERSION_1_6;
+    return result;
+}
+
+// ---------------------------------------动态注册结束--------------------------------------
+        
+// 普通方法
 JNIEXPORT jstring JNICALL
 Java_com_egas_demo_JniDemoClass_stringFromJNI(
         JNIEnv *env,
@@ -20,7 +67,7 @@ Java_com_egas_demo_JniDemoClass_stringFromJNI(
     env->ReleaseStringUTFChars(owner, javaStr);
     return env->NewStringUTF(hello.c_str());
 }
-
+// java 中的静态 native 方法
 JNIEXPORT jstring JNICALL
 Java_com_egas_demo_JniDemoClass_stringFromStaticJNI(
         JNIEnv *env,
@@ -35,29 +82,31 @@ Java_com_egas_demo_JniDemoClass_stringFromStaticJNI(
     env->ReleaseStringUTFChars(owner, javaStr);
     return env->NewStringUTF(hello.c_str());
 }
-
-JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_processIntArray
+// 处理 int 数组
+JNIEXPORT void JNICALL
+Java_com_egas_demo_JniDemoClass_processIntArray
         (JNIEnv *env, jobject, jintArray nums) {
     jsize size = env->GetArrayLength(nums);
     jint *arr = env->GetIntArrayElements(nums, JNI_FALSE);
     for (int i = 0; i < size; ++i) {
-        arr[i] = size-i;
+        arr[i] = size - i;
     }
-    env->ReleaseIntArrayElements(nums,arr,0);
+    env->ReleaseIntArrayElements(nums, arr, 0);
 }
-
-JNIEXPORT jobjectArray JNICALL Java_com_egas_demo_JniDemoClass_processStringArray
+// 处理 string 数组
+JNIEXPORT jobjectArray JNICALL
+Java_com_egas_demo_JniDemoClass_processStringArray
         (JNIEnv *env, jobject, jobjectArray strs) {
     jsize size = env->GetArrayLength(strs);
     for (int i = 0; i < size; ++i) {
-        auto str = (jstring) (env->GetObjectArrayElement(strs,i));
-        if(str){
-            const char* cstr = env->GetStringUTFChars(str,JNI_FALSE);
-            LOGE("num= %d str=%s", i,cstr);
-            env->ReleaseStringUTFChars(str,cstr);
-            if(i==1){ // 修改 index 为 1 的元素
+        auto str = (jstring) (env->GetObjectArrayElement(strs, i));
+        if (str) {
+            const char *cstr = env->GetStringUTFChars(str, JNI_FALSE);
+            LOGE("num= %d str=%s", i, cstr);
+            env->ReleaseStringUTFChars(str, cstr);
+            if (i == 1) { // 修改 index 为 1 的元素
                 jstring s = env->NewStringUTF("1");
-                env->SetObjectArrayElement(strs,i,s);
+                env->SetObjectArrayElement(strs, i, s);
             }
         }
     }
@@ -66,18 +115,20 @@ JNIEXPORT jobjectArray JNICALL Java_com_egas_demo_JniDemoClass_processStringArra
     for (int i = 0; i < size; ++i) {
         std::string str = std::to_string(i);
         jstring s = env->NewStringUTF(str.c_str());
-        env->SetObjectArrayElement(jarr,i,s);
+        env->SetObjectArrayElement(jarr, i, s);
     }
     return jarr;
 }
-JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_modifyField
+//修改静态属性和实例属性
+JNIEXPORT void JNICALL
+Java_com_egas_demo_JniDemoClass_modifyField
         (JNIEnv *env, jobject thiz) {
     jclass clz = env->GetObjectClass(thiz);// 获取 jclass
     jfieldID sFieldId = env->GetStaticFieldID(clz, "staticField", "Ljava/lang/String;"); // 静态字段 ID
     // 访问静态字段
     if (sFieldId) {
         // Java 方法的返回值 String 映射为 jstring
-        jstring jStr = static_cast<jstring>(env->GetStaticObjectField(clz, sFieldId));
+        auto jStr = (jstring) (env->GetStaticObjectField(clz, sFieldId));
         const char *sStr = env->GetStringUTFChars(jStr, JNI_FALSE);
         env->ReleaseStringUTFChars(jStr, sStr);
         jstring newStr = env->NewStringUTF("静态字段修改");
@@ -90,7 +141,7 @@ JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_modifyField
     jfieldID mFieldId = env->GetFieldID(clz, "strField", "Ljava/lang/String;");
     // 访问实例字段
     if (mFieldId) {
-        jstring jStr = static_cast<jstring>(env->GetObjectField(thiz, mFieldId));
+        auto jStr = (jstring) (env->GetObjectField(thiz, mFieldId));
         const char *sStr = env->GetStringUTFChars(jStr, JNI_FALSE);
         env->ReleaseStringUTFChars(jStr, sStr);
         jstring newStr = env->NewStringUTF("实例字段修改");
@@ -100,7 +151,9 @@ JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_modifyField
         }
     }
 }
-JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_invokeMethod
+// 调用静态方法和实例方法
+JNIEXPORT void JNICALL
+Java_com_egas_demo_JniDemoClass_invokeMethod
         (JNIEnv *env, jobject thiz) {
     jclass clz = env->GetObjectClass(thiz);
     // 静态方法 ID
@@ -114,6 +167,7 @@ JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_invokeMethod
         env->CallVoidMethod(thiz, mMethodId);
     }
 }
+// 缓存方法ID
 JNIEXPORT void JNICALL
 Java_com_egas_demo_JniDemoClass_cacheMethodId(JNIEnv *env, jobject obj) {
     static jfieldID fid_s = nullptr;  // 使用时缓存ID
@@ -129,7 +183,7 @@ Java_com_egas_demo_JniDemoClass_cacheMethodId(JNIEnv *env, jobject obj) {
         }
     }
 
-    jstr = static_cast<jstring>(env->GetObjectField(obj, fid_s));
+    jstr = (jstring) (env->GetObjectField(obj, fid_s));
     str = env->GetStringUTFChars(jstr, JNI_FALSE);
     if (str == nullptr) {
         return; /* out of memory */
@@ -144,7 +198,8 @@ Java_com_egas_demo_JniDemoClass_cacheMethodId(JNIEnv *env, jobject obj) {
 }
 // 全局变量缓存ID
 jmethodID MID_InstanceMethodCall_callback;
-JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_initCacheMethodId
+JNIEXPORT void JNICALL
+Java_com_egas_demo_JniDemoClass_initCacheMethodId
         (JNIEnv *env, jclass clz) {
     MID_InstanceMethodCall_callback = env->GetMethodID(clz, "logHelloJava", "()V");
 }
@@ -153,4 +208,46 @@ JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_verifyInitCacheMethodId
         (JNIEnv *env, jobject thiz) {
     env->CallVoidMethod(thiz, MID_InstanceMethodCall_callback);
 }
+
+
+// 引用
+//创建全局引用
+jstring global_str;
+JNIEXPORT void JNICALL
+Java_com_egas_demo_JniDemoClass_handlerDemo
+        (JNIEnv *env, jobject, jstring) {
+    // 局部引用
+    jstring jstr = env->NewStringUTF("cc");
+    auto local_str = (jstring) env->NewLocalRef(jstr);
+    //释放局部引用
+    env->DeleteLocalRef(local_str);
+
+    // 全局引用
+    global_str = (jstring) env->NewGlobalRef(jstr);
+    env->DeleteGlobalRef(global_str);
+
+    // 弱全局引用
+    auto weakRefClz = (jstring) env->NewWeakGlobalRef(jstr);
+    env->DeleteWeakGlobalRef(weakRefClz);
+}
+
+// 异常
+JNIEXPORT void JNICALL
+Java_com_egas_demo_JniDemoClass_exceptingDemo
+        (JNIEnv *env, jobject thiz) {
+    jclass clz = env->GetObjectClass(thiz);// 获取 jclass
+    jfieldID mFieldId = env->GetFieldID(clz, "strField1", "Ljava/lang/String;");
+    if(env->ExceptionOccurred()){
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+        jclass newExcCls;
+        newExcCls = env->FindClass("java/lang/RuntimeException");
+        if (newExcCls == nullptr) {
+            return;
+        }
+        env->ThrowNew(newExcCls,"调用 strField1 属性发生了异常 ");
+    }
+}
+
+
 }
