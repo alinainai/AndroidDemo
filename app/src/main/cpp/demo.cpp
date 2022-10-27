@@ -1,3 +1,8 @@
+#include <jni.h>
+#include <string>
+#include <cstdio>
+#include "androidlog.h"
+
 extern "C" {
         
 // ---------------------------------------动态注册开始--------------------------------------
