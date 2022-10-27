@@ -52,6 +52,15 @@ class MainActivity : BaseActivity() {
         binding.button6.setOnClickListener {
             jniBean.verifyInitCacheMethodId()
         }
+        binding.button7.setOnClickListener {
+            jniBean.handlerDemo("cc")
+        }
+        binding.button8.setOnClickListener {
+            jniBean.exceptingDemo()
+        }
+        binding.button9.setOnClickListener {
+            Log.e("dynamic","value=${jniBean.dynamicMethod("hello c")}")
+        }
     }
 
 }
