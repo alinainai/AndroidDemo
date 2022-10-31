@@ -40,22 +40,19 @@ class CustomTransform(project: Project): Transform() {
 
         // Delete all transform tmp files when not in incremental build.
         if (!transformInvocation.isIncremental) {
-            log("All File deleted.")
             outputProvider.deleteAll()
         }
         for (input in inputProvider) {
-            log("Transform jarInputs start.")
             for (jarInput in input.jarInputs) {
                 val inputJar = jarInput.file
                 val outputJar = outputProvider.getContentLocation(jarInput.name, jarInput.contentTypes, jarInput.scopes, Format.JAR)
                 if (transformInvocation.isIncremental) {
-                    log("Incremental:Transform jarInputs inputJar.name=${inputJar.name}")
                     when (jarInput.status ?: Status.NOTCHANGED) {
                         Status.NOTCHANGED -> {
                             // Do nothing.
                         }
                         Status.ADDED, Status.CHANGED -> {
-                                transformJar(inputJar, outputJar)
+                            transformJar(inputJar, outputJar)
                         }
                         Status.REMOVED -> {
                             // Delete.
@@ -63,19 +60,16 @@ class CustomTransform(project: Project): Transform() {
                         }
                     }
                 } else {
-                    log("NoIncremental:Transform jarInputs inputJar.name=${inputJar.name}")
                     transformJar(inputJar, outputJar)
                 }
             }
             // 4. Transform directory input.
-            log("Transform directory start.")
             for (dirInput in input.directoryInputs) {
                 val inputDir = dirInput.file
                 val outputDir = outputProvider.getContentLocation(dirInput.name, dirInput.contentTypes, dirInput.scopes, Format.DIRECTORY)
                 if (transformInvocation.isIncremental) {
                     for ((inputFile, status) in dirInput.changedFiles) {
                         val outputFile = concatOutputFilePath(outputDir, inputFile)
-                        log("Incremental:Transform directory inputJar.name=${inputFile.name}")
                         when (status ?: Status.NOTCHANGED) {
                             Status.NOTCHANGED -> {
                                 // Do nothing.
@@ -93,7 +87,6 @@ class CustomTransform(project: Project): Transform() {
                 } else {
                     for (inputFile in FileUtils.getAllFiles(inputDir)) {
                         val outputFile = concatOutputFilePath(outputDir, inputFile)
-                        log("NoIncremental:Transform directory inputJar.name=${inputFile.name}")
                         transformDirectory(inputFile, outputFile)
                     }
                 }
@@ -107,22 +100,25 @@ class CustomTransform(project: Project): Transform() {
      */
     private fun transformJar(inputJar: File, outputJar: File) {
         Files.createParentDirs(outputJar)
-        FileInputStream(inputJar).use { fis ->
-            ZipInputStream(fis).use { zis ->
-                FileOutputStream(outputJar).use { fos ->
-                    ZipOutputStream(fos).use { zos ->
-                        var entry = zis.nextEntry
-                        while (entry != null) {
-                            if (!entry.isDirectory ) {
-                                zos.putNextEntry(ZipEntry(entry.name))
-                                zis.copyTo(zos)
-                            }
-                            entry = zis.nextEntry
-                        }
-                    }
-                }
-            }
-        }
+        // 如果不需要处理 Jar 包下的文件使用下面代码
+        FileUtils.copyFile(inputJar, outputJar)
+        // 如果需要处理 Jar 包下的文件使用下面代码
+//        FileInputStream(inputJar).use { fis ->
+//            ZipInputStream(fis).use { zis ->
+//                FileOutputStream(outputJar).use { fos ->
+//                    ZipOutputStream(fos).use { zos ->
+//                        var entry = zis.nextEntry
+//                        while (entry != null) {
+//                            if (!entry.isDirectory ) {
+//                                zos.putNextEntry(ZipEntry(entry.name))
+//                                zis.copyTo(zos)
+//                            }
+//                            entry = zis.nextEntry
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 
     /**
@@ -133,8 +129,20 @@ class CustomTransform(project: Project): Transform() {
         Files.createParentDirs(outputFile)
         FileInputStream(inputFile).use { fis ->
             FileOutputStream(outputFile).use { fos ->
-                // Apply transform function.
-                fis.copyTo(fos)
+                if(classFilter(inputFile.name)){ // 如果是 .class 文件
+                    // Apply transform function.
+                    val classReader = ClassReader(fis) //对class文件进行读取与解析
+                    //对class文件的写入
+                    val classWriter = ClassWriter(classReader, ClassWriter.COMPUTE_MAXS)
+                    //访问class文件相应的内容，解析到某一个结构就会通知到ClassVisitor的相应方法
+                    val classVisitor = CustomClassVisitor(classWriter)
+                    //依次调用 ClassVisitor接口的各个方法
+                    classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
+                    //toByteArray方法会将最终修改的字节码以 byte 数组形式返回。
+                    fos.write(classWriter.toByteArray())
+                }else{
+                    fis.copyTo(fos)
+                }
             }
         }
     }
@@ -144,4 +152,7 @@ class CustomTransform(project: Project): Transform() {
     private fun log(logStr: String) {
         println("$name - $logStr")
     }
+
+    private fun classFilter(className: String) = className.endsWith(SdkConstants.DOT_CLASS)
+
 }
